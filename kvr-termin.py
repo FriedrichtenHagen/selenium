@@ -11,32 +11,11 @@ browser = webdriver.Firefox()
 # soup = BeautifulSoup(html, 'html.parser')
 
 def pass_captcha():
-    
+    print('test pass_captcha')
     # needs work
     # connect to captcha solver api
-    
-    print('test')
 
-
-
-def check_month_for_termin():
-
-    current_url = browser.current_url
-
-    # Send an HTTP GET request to the URL
-    response = requests.get(current_url)
-
-    # Check if the request was successful (status code 200)
-    if response.status_code == 200:
-        # Get the HTML content
-        html = response.text
-    else:
-        print(f"Failed to retrieve the web page. Status code: {response.status_code}")
-
-    soup = BeautifulSoup(html, 'html.parser')
-    # Use the 'select' method to find all <td> elements
-    td_elements = soup.select("td")
-    
+def check_month_for_termin():    
     js_script = '''            
         // Select all elements with the class name "htmlCalendarMonth"
         var elements = document.querySelectorAll(".htmlCalendarMonth");
@@ -47,22 +26,32 @@ def check_month_for_termin():
             elements[i].style.display = "block"
         }
     '''
-
     browser.execute_script(js_script)
+    
+    soup = BeautifulSoup(browser.page_source, 'html.parser')
+    # Use the 'select' method to find all <td> elements
+    td_elements = soup.select("td")
 
     # Loop through and print the contents of each <td> element
+    free_termine_numbers = []
     for i, td in enumerate(td_elements):
         # exclude empty table fields
         if(not td.text):
             print('td is empty')
         elif('Keine freien Termine am' not in td.text):
+            # we have found a free termin
             print('Valid Termin?')
             print(td)
-            # access the correct month
-
-
+            print(i)
+            termin_date = td.text[-10:]
+            free_termine_numbers.append(i)
         else:
-            print(f'{i}: {td.text}')
+            print(f'{i}: {td.text[-10:]}')
+    target_date = "29.10.2023"
+    first_termin = browser.find_element("xpath", f"//td[contains(text(), '{target_date}')]")
+    print(first_termin)
+
+    print(f'first termin is: {first_termin}')
                 
 
 # https://terminvereinbarung.muenchen.de/abh/termin/index.php?
@@ -73,7 +62,7 @@ def driver():
     # select Notfalltermin/ Emergency Appointment (students, scientists, blue card & family)
     # CASETYPES[Notfalltermin UA 35]
     select_element = browser.find_element(By.NAME, "CASETYPES[Notfalltermin UA 35]")
-    
+
     # Initialize a Select object for the select element
     select = Select(select_element)
 
