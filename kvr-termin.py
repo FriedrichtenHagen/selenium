@@ -5,6 +5,16 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
 import requests
+import re
+
+# Öffnungszeiten KVR
+# 7:30
+# 8:30
+# 7:30
+# 8:30
+# 7:30
+
+
 
 browser = webdriver.Firefox()
 # Parse the HTML with BeautifulSoup
@@ -15,7 +25,8 @@ def pass_captcha():
     # needs work
     # connect to captcha solver api
 
-def check_month_for_termin():    
+def check_for_termin(): 
+    # display full calendar, this is useful for debugging  
     js_script = '''            
         // Select all elements with the class name "htmlCalendarMonth"
         var elements = document.querySelectorAll(".htmlCalendarMonth");
@@ -34,27 +45,40 @@ def check_month_for_termin():
 
     # Loop through and print the contents of each <td> element
     free_termine_numbers = []
+    date_pattern = r"\d{1,2}\.\d{1,2}\.\d{4}"
     for i, td in enumerate(td_elements):
         # exclude empty table fields
         if(not td.text):
-            print('td is empty')
+            print('empty place holder table field')
         elif('Keine freien Termine am' not in td.text):
             # we have found a free termin
             print('Valid Termin?')
             print(td)
             print(i)
-            termin_date = td.text[-10:]
+            # Extract date pattern from the td text
+            date_string = re.search(date_pattern, td.text).group()
+            print(f'Free Termin. Index: {i} Date: {date_string}')
             free_termine_numbers.append(i)
         else:
-            print(f'{i}: {td.text[-10:]}')
-    target_date = "29.10.2023"
-    first_termin = browser.find_element("xpath", f"//td[contains(text(), '{target_date}')]")
-    print(first_termin)
+            # Find all matches of the date pattern in the text
+            date_string = re.search(date_pattern, td.text).group()
+            print(f'{i}: {date_string}')
 
-    print(f'first termin is: {first_termin}')
+    if(free_termine_numbers):
+        # Find all the <td> elements on the page
+        td_selenium_elements = browser.find_elements(By.TAG_NAME, "td")
+        # first free termin
+        nth_td = td_selenium_elements[free_termine_numbers[0]]
+        print(f'first termin is: {nth_td.text}')
+
+        # notify me via email that a free termin was found
+
+        # extend script to automatically book a termin
+        # ...
+    else:
+        print('there are no free termine currently')
                 
 
-# https://terminvereinbarung.muenchen.de/abh/termin/index.php?
 def driver():
     browser.get('https://terminvereinbarung.muenchen.de/abh/termin/index.php?')
     browser.maximize_window()
@@ -74,7 +98,7 @@ def driver():
     
     # pass_captcha()
     
-    check_month_for_termin()
+    check_for_termin()
 
     # browser.close()
 
